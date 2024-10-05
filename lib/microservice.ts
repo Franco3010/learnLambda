@@ -1,17 +1,19 @@
 import { ITable } from "aws-cdk-lib/aws-dynamodb";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
-import { NodejsFunction, NodejsFunctionProps } from "aws-cdk-lib/aws-lambda-nodejs";
+import {
+  NodejsFunction,
+  NodejsFunctionProps,
+} from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { join } from "path";
 
 interface SwnMicroservicesProps {
-    productTable: ITable;
-    basketTable: ITable;
-    orderTable: ITable;
+  productTable: ITable;
+  basketTable: ITable;
+  orderTable: ITable;
 }
 
 export class SwnMicroservices extends Construct {
-
   public readonly productMicroservice: NodejsFunction;
   public readonly basketMicroservice: NodejsFunction;
   public readonly orderingMicroservice: NodejsFunction;
@@ -27,49 +29,47 @@ export class SwnMicroservices extends Construct {
     this.orderingMicroservice = this.createOrderingFunction(props.orderTable);
   }
 
-  private createProductFunction(productTable: ITable) : NodejsFunction {
+  private createProductFunction(productTable: ITable): NodejsFunction {
     const nodeJsFunctionProps: NodejsFunctionProps = {
       bundling: {
-        externalModules: [
-          'aws-sdk'
-        ]
+        externalModules: ["aws-sdk"],
       },
       environment: {
-        PRIMARY_KEY: 'id',
-        DYNAMODB_TABLE_NAME: productTable.tableName
+        PRIMARY_KEY: "id",
+        DYNAMODB_TABLE_NAME: productTable.tableName,
       },
-      runtime: Runtime.NODEJS_14_X
-    }
+      runtime: Runtime.NODEJS_18_X,
+    };
 
     // Product microservices lambda function
-    const productFunction = new NodejsFunction(this, 'productLambdaFunction', {
+    const productFunction = new NodejsFunction(this, "productLambdaFunction", {
       entry: join(__dirname, `/../src/product/index.js`),
       ...nodeJsFunctionProps,
     });
 
-    productTable.grantReadWriteData(productFunction); 
-    
+    productTable.grantReadWriteData(productFunction);
+
     return productFunction;
   }
 
-  private createBasketFunction(basketTable: ITable) : NodejsFunction {
+  private createBasketFunction(basketTable: ITable): NodejsFunction {
     const basketFunctionProps: NodejsFunctionProps = {
       bundling: {
-          externalModules: [
-              'aws-sdk', // Use the 'aws-sdk' available in the Lambda runtime
-          ],
+        externalModules: [
+          "aws-sdk", // Use the 'aws-sdk' available in the Lambda runtime
+        ],
       },
       environment: {
-          PRIMARY_KEY: 'userName',
-          DYNAMODB_TABLE_NAME: basketTable.tableName,
-          EVENT_SOURCE: "com.swn.basket.checkoutbasket",
-          EVENT_DETAILTYPE: "CheckoutBasket",
-          EVENT_BUSNAME: "SwnEventBus"
+        PRIMARY_KEY: "userName",
+        DYNAMODB_TABLE_NAME: basketTable.tableName,
+        EVENT_SOURCE: "com.swn.basket.checkoutbasket",
+        EVENT_DETAILTYPE: "CheckoutBasket",
+        EVENT_BUSNAME: "SwnEventBus",
       },
-      runtime: Runtime.NODEJS_14_X,
-    }
+      runtime: Runtime.NODEJS_18_X,
+    };
 
-    const basketFunction = new NodejsFunction(this, 'basketLambdaFunction', {
+    const basketFunction = new NodejsFunction(this, "basketLambdaFunction", {
       entry: join(__dirname, `/../src/basket/index.js`),
       ...basketFunctionProps,
     });
@@ -78,28 +78,27 @@ export class SwnMicroservices extends Construct {
     return basketFunction;
   }
 
-  private createOrderingFunction(orderTable: ITable) : NodejsFunction {
+  private createOrderingFunction(orderTable: ITable): NodejsFunction {
     const nodeJsFunctionProps: NodejsFunctionProps = {
-        bundling: {
-            externalModules: [
-                'aws-sdk', // Use the 'aws-sdk' available in the Lambda runtime
-            ],
-        },      
-        environment: {
-            PRIMARY_KEY: 'userName',
-            SORT_KEY: 'orderDate',
-            DYNAMODB_TABLE_NAME: orderTable.tableName,
-        },
-        runtime: Runtime.NODEJS_14_X,
-    }
+      bundling: {
+        externalModules: [
+          "aws-sdk", // Use the 'aws-sdk' available in the Lambda runtime
+        ],
+      },
+      environment: {
+        PRIMARY_KEY: "userName",
+        SORT_KEY: "orderDate",
+        DYNAMODB_TABLE_NAME: orderTable.tableName,
+      },
+      runtime: Runtime.NODEJS_18_X,
+    };
 
-    const orderFunction = new NodejsFunction(this, 'orderingLambdaFunction', {
-        entry: join(__dirname, `/../src/ordering/index.js`),
-        ...nodeJsFunctionProps,
+    const orderFunction = new NodejsFunction(this, "orderingLambdaFunction", {
+      entry: join(__dirname, `/../src/ordering/index.js`),
+      ...nodeJsFunctionProps,
     });
 
     orderTable.grantReadWriteData(orderFunction);
     return orderFunction;
   }
-
 }

@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+
+Resources:
+  ProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/product/
+      Handler: index.handler
+      Events:
+        ApiRoot:
+          Type: Api
+          Properties:
+            Path: /product
+            Method: ANY
+        ApiWithId:
+          Type: Api
+          Properties:
+            Path: /product/{id}
+            Method: ANY
+
+  BasketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/basket/
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /basket
+            Method: ANY
+
+  OrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/ordering/
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /order
+            Method: ANY
+
+  ProductTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: product
+      PrimaryKey:
+        Name: id
+        Type: String
+
+  BasketTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: basket
+      PrimaryKey:
+        Name: userName
+        Type: String
+
+  OrderTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: order
+      PrimaryKey:
+        Name: userName
+        Type: String
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
