@@ -50,15 +50,14 @@ const createOrder = async (basketCheckoutEvent) => {
     // set orderDate for SK of order dynamodb
     const orderDate = new Date().toISOString();
     basketCheckoutEvent.orderDate = orderDate;
-    console.log(basketCheckoutEvent);
 
     const params = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
+      TableName: "order",
       Item: marshall(basketCheckoutEvent || {}),
     };
 
     const createResult = await ddbClient.send(new PutItemCommand(params));
-    console.log(createResult);
+
     return createResult;
   } catch (e) {
     console.error(e);

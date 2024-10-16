@@ -24,7 +24,9 @@
     "@aws-sdk/client-eventbridge": "^3.662.0",
     "@aws-sdk/util-dynamodb": "^3.662.0",
     "aws-cdk-lib": "^2.160.0",
+    "bcryptjs": "^2.4.3",
     "constructs": "^10.0.0",
+    "jsonwebtoken": "^9.0.2",
     "source-map-support": "^0.5.16"
   }
 }

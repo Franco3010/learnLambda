@@ -7,6 +7,25 @@ Globals:
     Runtime: nodejs20.x
 
 Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt AuthorizerFunction.Arn
+            Identity:
+              Header: Authorization
+              ValidationExpression: '^[-0-9a-zA-Z\._]*$'
+
+  AuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/authorize/
+      Handler: index.handler
+
   ProductFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -16,11 +35,13 @@ Resources:
         ApiRoot:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /product
             Method: ANY
         ApiWithId:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /product/{id}
             Method: ANY
 
@@ -30,11 +51,18 @@ Resources:
       CodeUri: src/basket/
       Handler: index.handler
       Events:
-        Api:
+        ApiRoot:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /basket
             Method: ANY
+        ApiCheckout:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /basket/checkout
+            Method: POST
 
   OrderFunction:
     Type: AWS::Serverless::Function
@@ -45,8 +73,40 @@ Resources:
         Api:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /order
             Method: ANY
+
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/auth/
+      Handler: index.handler
+      Events:
+        ApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /auth
+            Method: ANY
+            Auth:
+              Authorizer: NONE
+        ApiRegister:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /auth/register
+            Method: POST
+            Auth:
+              Authorizer: NONE
+        ApiLogin:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /auth/login
+            Method: POST
+            Auth:
+              Authorizer: NONE
 
   ProductTable:
     Type: AWS::Serverless::SimpleTable
@@ -72,7 +132,15 @@ Resources:
         Name: userName
         Type: String
 
+  UserTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: user
+      PrimaryKey:
+        Name: id
+        Type: String
+
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

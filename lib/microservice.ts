@@ -11,13 +11,15 @@ interface SwnMicroservicesProps {
   productTable: ITable;
   basketTable: ITable;
   orderTable: ITable;
+  userTable: ITable;
 }
 
 export class SwnMicroservices extends Construct {
   public readonly productMicroservice: NodejsFunction;
   public readonly basketMicroservice: NodejsFunction;
   public readonly orderingMicroservice: NodejsFunction;
-
+  public readonly authMicroservice: NodejsFunction;
+  public readonly authorizeMicroservice: NodejsFunction;
   constructor(scope: Construct, id: string, props: SwnMicroservicesProps) {
     super(scope, id);
 
@@ -27,6 +29,35 @@ export class SwnMicroservices extends Construct {
     this.basketMicroservice = this.createBasketFunction(props.basketTable);
     // ordering Microservice
     this.orderingMicroservice = this.createOrderingFunction(props.orderTable);
+    // auth microservice
+    this.authMicroservice = this.createUserFunction(props.userTable);
+
+    this.authorizeMicroservice = this.createAuthorizeFunction(props.userTable);
+  }
+
+  private createAuthorizeFunction(userTable: ITable): NodejsFunction {
+    const nodeJsFunctionProps: NodejsFunctionProps = {
+      bundling: {
+        externalModules: ["aws-sdk"],
+      },
+      environment: {
+        PRIMARY_KEY: "id",
+        DYNAMODB_TABLE_NAME: userTable.tableName,
+      },
+      runtime: Runtime.NODEJS_18_X,
+    };
+
+    const authorizeFunction = new NodejsFunction(
+      this,
+      "authorizeLambdaFunction",
+      {
+        entry: join(__dirname, `/../src/authorize/index.js`),
+        ...nodeJsFunctionProps,
+      }
+    );
+
+    userTable.grantReadWriteData(authorizeFunction);
+    return authorizeFunction;
   }
 
   private createProductFunction(productTable: ITable): NodejsFunction {
@@ -100,5 +131,30 @@ export class SwnMicroservices extends Construct {
 
     orderTable.grantReadWriteData(orderFunction);
     return orderFunction;
+  }
+
+  private createUserFunction(userTable: ITable): NodejsFunction {
+    const nodeJsFunctionProps: NodejsFunctionProps = {
+      bundling: {
+        externalModules: [
+          "aws-sdk",
+          // Use the 'aws-sdk' available in the Lambda runtime
+        ],
+      },
+      environment: {
+        PRIMARY_KEY: "id",
+        SORT_KEY: "username",
+        DYNAMODB_TABLE_NAME: userTable.tableName,
+      },
+      runtime: Runtime.NODEJS_18_X,
+    };
+
+    const userFunction = new NodejsFunction(this, "authLambdaFunction", {
+      entry: join(__dirname, `/../src/auth/index.js`),
+      ...nodeJsFunctionProps,
+    });
+
+    userTable.grantReadWriteData(userFunction);
+    return userFunction;
   }
 }

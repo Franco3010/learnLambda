@@ -9,6 +9,7 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { ddbClient } from "./ddbClient.js";
 import { ebClient } from "./eventBridgeClient.js";
 
+const basketTable = "basket";
 export const handler = async function (event) {
   console.log("request:", JSON.stringify(event, undefined, 2));
 
@@ -107,7 +108,7 @@ const createBasket = async (event) => {
   try {
     const requestBody = JSON.parse(event.body);
     const params = {
-      TableName: process.env.DYNAMODB_TABLE_NAME,
+      TableName: basketTable,
       Item: marshall(requestBody || {}),
     };
 
